@@ -41,16 +41,22 @@ def on_model_states_msg(model_states_msg):
   lastUpdateTime = rospy.get_rostime()
 
   for (model_idx, modelinstance_name) in enumerate(model_states_msg.name):
-    #print(model_idx, modelinstance_name)
+    # print(model_idx, modelinstance_name)
     model_name = pysdf.name2modelname(modelinstance_name)
-    #print('model_name:', model_name)
+    # print('marker model_name:', model_name)
     if not model_name in model_cache:
       sdf = pysdf.SDF(model=model_name)
-      model_cache[model_name] = sdf.world.models[0] if len(sdf.world.models) >= 1 else None
+      # print('marker model_name:', model_name)
+      # print(sdf.world.models)
+      # model_cache[model_name] = sdf.world.models[0] if len(sdf.world.models) >= 1 else None
+      for model in sdf.world.models:
+        if model.name == model_name:
+          model_cache[model_name] = model
+          break
       if model_cache[model_name]:
-        rospy.loginfo('Loaded model: %s' % model_cache[model_name].name)
+        rospy.loginfo('[GAZEBO2MARKER] Loaded model: %s' % model_cache[model_name].name)
       else:
-        rospy.loginfo('Unable to load model: %s' % model_name)
+        rospy.loginfo('[GAZEBO2MARKER] Unable to load model: %s' % model_name)
     model = model_cache[model_name]
     if not model: # Not an SDF model
       continue
@@ -68,9 +74,9 @@ def main():
 
   global submodelsToBeIgnored
   submodelsToBeIgnored = rospy.get_param('~ignore_submodels_of', '').split(';')
-  rospy.loginfo('Ignoring submodels of: ' + str(submodelsToBeIgnored))
+  rospy.loginfo('[GAZEBO2MARKER] Ignoring submodels of: ' + str(submodelsToBeIgnored))
   if submodelsToBeIgnored:
-    rospy.logerr('ignore_submodels_of is currently not supported and will thus have no effect')
+    rospy.logerr('[GAZEBO2MARKER] ignore_submodels_of is currently not supported and will thus have no effect')
 
 
   global updatePeriod
@@ -87,7 +93,7 @@ def main():
   lastUpdateTime = rospy.get_rostime()
   modelStatesSub = rospy.Subscriber('gazebo/model_states', ModelStates, on_model_states_msg)
 
-  rospy.loginfo('Spinning')
+  rospy.loginfo('[GAZEBO2MARKER] Spinning')
   rospy.spin()
 
 if __name__ == '__main__':

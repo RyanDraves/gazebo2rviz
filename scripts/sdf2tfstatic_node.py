@@ -64,7 +64,7 @@ def main():
   rospy.loginfo('Ignoring submodels of: %s' % ignored_submodels)
 
   global tfBroadcaster
-  tfBroadcaster = tf.TransformBroadcaster()
+  tfBroadcaster = tf.TransformBroadcaster(queue_size=10)
 
   global world
   sdf = pysdf.SDF(model=args.sdf)
@@ -75,7 +75,7 @@ def main():
   rospy.loginfo('Spinning')
   r = rospy.Rate(args.freq)
   while not rospy.is_shutdown():
-    publish_tf();
+    publish_tf()
     r.sleep()
 
 

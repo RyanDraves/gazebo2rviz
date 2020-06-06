@@ -54,9 +54,9 @@ def on_link_states_msg(link_states_msg):
           break
       # model_cache[model_name] = sdf.world.models[0] if len(sdf.world.models) >= 1 else None
       if model_cache[model_name]:
-        rospy.loginfo('[GAZEBO2MARKER] Loaded model: %s' % model_cache[model_name].name)
+        rospy.loginfo('[GAZEBO2TF] Loaded model: %s' % model_cache[model_name].name)
       else:
-        rospy.loginfo('[GAZEBO2MARKER] Unable to load model: %s' % model_name)
+        rospy.loginfo('[GAZEBO2TF] Unable to load model: %s' % model_name)
     model = model_cache[model_name]
     link_name_in_model = link_name.replace(modelinstance_name + '::', '')
     if model:
@@ -73,7 +73,7 @@ def on_link_states_msg(link_states_msg):
         parentinstance_link_name = 'gazebo_world'
     #print('parentinstance:', parentinstance_link_name)
     if is_ignored(parentinstance_link_name):
-      rospy.loginfo("[GAZEBO2MARKER] Ignoring TF %s -> %s" % (parentinstance_link_name, link_name))
+      rospy.loginfo("[GAZEBO2TF] Ignoring TF %s -> %s" % (parentinstance_link_name, link_name))
       continue
     pose = poses[link_name]
     # print("Pose: {}".format(pose))
@@ -81,7 +81,8 @@ def on_link_states_msg(link_states_msg):
     rel_tf = concatenate_matrices(inverse_matrix(parent_pose), pose)
     translation, quaternion = pysdf.homogeneous2translation_quaternion(rel_tf)
     #print('Publishing TF %s -> %s: t=%s q=%s' % (pysdf.sdf2tfname(parentinstance_link_name), pysdf.sdf2tfname(link_name), translation, quaternion))
-    tfBroadcaster.sendTransform(translation, quaternion, rospy.get_rostime(), pysdf.sdf2tfname(link_name), pysdf.sdf2tfname(parentinstance_link_name))
+    if not rospy.is_shutdown():
+      tfBroadcaster.sendTransform(translation, quaternion, rospy.get_rostime(), pysdf.sdf2tfname(link_name), pysdf.sdf2tfname(parentinstance_link_name))
 
 
 
@@ -90,7 +91,7 @@ def main():
 
   global submodelsToBeIgnored
   submodelsToBeIgnored = rospy.get_param('~ignore_submodels_of', '').split(';')
-  rospy.loginfo('[GAZEBO2MARKER] Ignoring submodels of: ' + str(submodelsToBeIgnored))
+  rospy.loginfo('[GAZEBO2TF] Ignoring submodels of: ' + str(submodelsToBeIgnored))
 
   global tfBroadcaster
   tfBroadcaster = tf.TransformBroadcaster()
@@ -99,7 +100,7 @@ def main():
   lastUpdateTime = rospy.get_rostime()
   linkStatesSub = rospy.Subscriber('gazebo/link_states', LinkStates, on_link_states_msg)
 
-  rospy.loginfo('[GAZEBO2MARKER] Spinning')
+  rospy.loginfo('[GAZEBO2TF] Spinning')
   rospy.spin()
 
 if __name__ == '__main__':

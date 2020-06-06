@@ -28,7 +28,7 @@ def publish_link_marker(link, full_linkname, **kwargs):
   if 'model_name' in kwargs and 'instance_name' in kwargs:
     full_linkinstancename = full_linkinstancename.replace(kwargs['model_name'], kwargs['instance_name'], 1)
   marker_msgs = link2marker_msg(link, full_linkinstancename, use_collision, rospy.Duration(2 * updatePeriod))
-  if len(marker_msgs) > 0:
+  if len(marker_msgs) > 0 and not rospy.is_shutdown():
     for marker_msg in marker_msgs:
       markerPub.publish(marker_msg)
 

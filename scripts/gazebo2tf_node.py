@@ -16,6 +16,7 @@ submodelsToBeIgnored = []
 lastUpdateTime = None
 updatePeriod = 0.05
 model_cache = {}
+prev_time = 0.0
 
 
 def is_ignored(link_name):
@@ -39,6 +40,11 @@ def on_link_states_msg(link_states_msg):
   for (link_idx, link_name) in enumerate(link_states_msg.name):
     poses[link_name] = pysdf.pose_msg2homogeneous(link_states_msg.pose[link_idx])
     #print('%s:\n%s' % (link_name, poses[link_name]))
+
+  global prev_time
+  cur_time = rospy.get_rostime()
+  repeated_timestamp = (cur_time == prev_time)
+  prev_time = cur_time
 
   for (link_idx, link_name) in enumerate(link_states_msg.name):
     #print(link_idx, link_name)
@@ -81,8 +87,10 @@ def on_link_states_msg(link_states_msg):
     rel_tf = concatenate_matrices(inverse_matrix(parent_pose), pose)
     translation, quaternion = pysdf.homogeneous2translation_quaternion(rel_tf)
     #print('Publishing TF %s -> %s: t=%s q=%s' % (pysdf.sdf2tfname(parentinstance_link_name), pysdf.sdf2tfname(link_name), translation, quaternion))
-    if not rospy.is_shutdown():
-      tfBroadcaster.sendTransform(translation, quaternion, rospy.get_rostime(), pysdf.sdf2tfname(link_name), pysdf.sdf2tfname(parentinstance_link_name))
+    # Don't republish transforms of the same timestamp
+    # https://github.com/ros/geometry2/issues/467
+    if not rospy.is_shutdown() and not repeated_timestamp:
+      tfBroadcaster.sendTransform(translation, quaternion, cur_time, pysdf.sdf2tfname(link_name), pysdf.sdf2tfname(parentinstance_link_name))
 
 
 
